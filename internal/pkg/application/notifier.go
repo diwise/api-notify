@@ -27,7 +27,7 @@ func (a *App) notificationMessageHandler() mq.TopicMessageHandler {
 		subscriptions := a.db.GetSubscriptionsByIdOrType(context.Background(), id, entityType)
 
 		for _, s := range subscriptions {
-			if status, err := Notify(s, nm.Payload); err != nil {
+			if status, err := notify(s, nm.Payload); err != nil {
 				log.Printf("%s \n %s", status, err.Error())
 			} else {
 				log.Printf("Notification sent to %s", s.Notification.Endpoint.Uri)
@@ -36,13 +36,15 @@ func (a *App) notificationMessageHandler() mq.TopicMessageHandler {
 	}
 }
 
-func Notify(subscription models.Subscription, jsonData string) (string, error) {
+func notify(subscription models.Subscription, jsonData string) (string, error) {
 
 	s := fmt.Sprintf(`
 	{ 
 		"subscriptionId": "%s", 
 		"data": [%s] 
 	}`, subscription.Id, jsonData)
+
+	log.Printf("POST to %s\n%s", subscription.Notification.Endpoint.Uri, s)
 
 	resp, err := http.Post(subscription.Notification.Endpoint.Uri, "application/json", strings.NewReader(s))
 

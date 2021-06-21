@@ -10,6 +10,8 @@ DELETE /subscriptions/{subscriptionId}
 ```
 ## Quirks
 CrateDB container fails to start with vm heap memory error - ```sysctl -w vm.max_map_count=262144``` in the host should fix it. 
+## Init
+POST to /init to create the database
 ## Examples
 ### Add subscription
 POST to /subscriptions with body

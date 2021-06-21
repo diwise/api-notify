@@ -16,6 +16,8 @@ services:
       DATABASE_URL: 'postgres://testuser:testpass@postgresdb:5432/devreg?sslmode=disable&pool_max_conns=10'
       SERVICE_PORT: '9090'
       RABBITMQ_HOST: 'rabbitmq'
+      RABBITMQ_USER: 'user'
+      RABBITMQ_PASSWORD: 'bitnami'
     
     ports:
       - '9090:9090'

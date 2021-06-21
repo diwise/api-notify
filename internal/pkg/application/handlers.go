@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/diwise/api-notify/pkg/models"
 	"github.com/go-chi/render"
+
+	"github.com/google/uuid"
 )
 
 // /subscriptions - returns list of subscriptions
@@ -44,6 +47,12 @@ func (a *App) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	if err := render.Bind(r, subReq); err != nil {
 		InternalServerError(w, err)
 		return
+	}
+
+	if subReq.Id == "" {
+		u := uuid.New()
+		uuid := strings.Replace(u.String(), "-", "", -1)
+		subReq.Id = uuid
 	}
 
 	if err := a.db.CreateSubscription(r.Context(), subReq.Subscription); err == nil {
@@ -87,23 +96,22 @@ func (a *App) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 //TODO: Ändra så att rätt objekt skickas som svar. Använda vanliga ngsi diwise pkg
 
 func Ok(w http.ResponseWriter, data []byte) {
 	w.Write(data)
 }
 func Created(w http.ResponseWriter, location string) {
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Add("Location", location)
+	w.WriteHeader(http.StatusCreated)
 }
 func NotFound(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNotFound)
 }
-func NoContent(w http.ResponseWriter){
+func NoContent(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNoContent)
 }
 func InternalServerError(w http.ResponseWriter, err error) {
-	w.WriteHeader(http.StatusInternalServerError)
 	w.Write([]byte(err.Error()))
+	w.WriteHeader(http.StatusInternalServerError)
 }
