@@ -1,12 +1,15 @@
 # api-notify
 Api for supporting subscriptions and notifications
 ## API
+```
 GET /subscriptions
 POST /subscriptions
 GET /subscriptions/{subscriptionId}
 PUT /subscriptions/{subscriptionId}
 DELETE /subscriptions/{subscriptionId}
-
+```
+## Quirks
+CrateDB container fails to start with vm heap memory error - ```sysctl -w vm.max_map_count=262144``` in the host should fix it. 
 ## Examples
 ### Add subscription
 POST to /subscriptions with body
@@ -59,4 +62,5 @@ POST to /subscriptions with body
 }
 ```
 ```Id```: Id for Subscription. If exists the subscription will be updated
+
 ```entities```: What entities should the subscription create notifications for. Equal ID or equal type is implementetd.

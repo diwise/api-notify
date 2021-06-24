@@ -21,10 +21,11 @@ type App struct {
 	mq     mq.Context
 }
 
-func NewApplication(r chi.Router, db db.Db) *App {
+func NewApplication(r chi.Router, db db.Db, mq mq.Context) *App {
 	a := &App{
 		router: r,
 		db:     db,
+		mq:     mq,
 	}
 
 	r.Use(middleware.Logger)
@@ -44,32 +45,18 @@ func NewApplication(r chi.Router, db db.Db) *App {
 
 	r.Post("/init", a.initialize)
 
+	a.mq.RegisterTopicMessageHandler("notify", a.notificationMessageHandler())
+
 	return a
 }
 
-func (a *App) Start(port string) {
-
-	//TODO: Skapa config object och skicka in i Start
-
-	ctx, _ := mq.Initialize(mq.Config{
-		Host:        "localhost",
-		User:        "user",
-		Password:    "bitnami",
-		ServiceName: "api-notify",
-	})
-
-	defer ctx.Close()
-
-	ctx.RegisterTopicMessageHandler("notify", a.notificationMessageHandler())
-
-	a.mq = ctx
-
-	http.ListenAndServe(fmt.Sprintf(":%s", port), a.router)
+func (a *App) Start(port string) error {
+	return http.ListenAndServe(fmt.Sprintf(":%s", port), a.router)
 }
 
 func (a *App) notify(w http.ResponseWriter, r *http.Request) {
 	// En metod för att kunna trigga en händelse som läggs på MQ.
-	// Att entityType ska vara i URL är egenteligen inte nödvändigt.
+	// Att entityType ska vara i URL är egentligen inte nödvändigt.
 
 	if entityType := chi.URLParam(r, "entityType"); entityType != "" {
 		body, _ := ioutil.ReadAll(r.Body)

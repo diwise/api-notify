@@ -15,7 +15,7 @@ type Db struct {
 	pool *pgxpool.Pool
 }
 
-func NewDatabase(dbUrl string) *Db {
+func NewDatabase(dbUrl string) Db {
 	poolConfig, err := pgxpool.ParseConfig(dbUrl)
 	if err != nil {
 		panic(err.Error())
@@ -26,7 +26,7 @@ func NewDatabase(dbUrl string) *Db {
 		panic(err.Error())
 	}
 
-	return &Db{
+	return Db{
 		pool: db,
 	}
 }
