@@ -16,18 +16,26 @@ import (
 func (a *App) notificationMessageHandler() mq.TopicMessageHandler {
 	return func(msg amqp.Delivery) {
 		var nm NotificationMessage
+
+		log.Printf("message body: %s", string(msg.Body))
+
 		json.Unmarshal(msg.Body, &nm)
-		m := JsonObjectToMap(nm.Payload)
+		//m := JsonObjectToMap(string(nm.Body))
 
-		//TODO: det sak vara möjligt att hämta baserat på IdPattern också
+		//TODO: det ska vara möjligt att hämta baserat på IdPattern också
 
-		entityType := m["type"].(string)
-		id := m["id"].(string)
+		entityType := nm.EntityType
+		id := nm.EntityID
+
+		if entityType == "" || id == "" {
+			log.Printf("bad event without type and id information received")
+			return
+		}
 
 		subscriptions := a.db.GetSubscriptionsByIdOrType(context.Background(), id, entityType)
 
 		for _, s := range subscriptions {
-			if status, err := notify(s, nm.Payload); err != nil {
+			if status, err := notify(s, string(nm.Body)); err != nil {
 				log.Printf("%s \n %s", status, err.Error())
 			} else {
 				log.Printf("Notification sent to %s", s.Notification.Endpoint.Uri)
@@ -48,5 +56,11 @@ func notify(subscription models.Subscription, jsonData string) (string, error) {
 
 	resp, err := http.Post(subscription.Notification.Endpoint.Uri, "application/json", strings.NewReader(s))
 
-	return resp.Status, err
+	if err != nil {
+		return "", err
+	}
+
+	log.Printf("POST returned code %d", resp.StatusCode)
+
+	return resp.Status, nil
 }

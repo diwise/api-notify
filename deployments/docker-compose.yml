@@ -22,18 +22,17 @@ services:
     ports:
       - '9090:9090'
 
+
   postgresdb:
-    image: 'diwise/testdb-postgres:latest'
-    build:
-      context: ..
-      dockerfile: ./test/database/testdb-dockerfile
+    image: 'ghcr.io/diwise/test-db-postgresql:prod-824e7cffd65dd3766c88441a48cffd5b2acd55f2'
     restart: always
     environment:
       POSTGRES_DB: 'devreg'
       POSTGRES_USER: 'testuser'
       POSTGRES_PASSWORD: 'testpass'
     ports:
-      - '5432:5432'
+      - '5432'
+
 
   rabbitmq:
     image: 'bitnami/rabbitmq:3.8'
@@ -41,18 +40,20 @@ services:
       - '4369'
       - '5672:5672'
       - '25672'
-      - '15672'
+      - '15672:15672'
     volumes:
       - 'rabbitmq_data:/bitnami'
 
+
   grafana:
-    image: 'grafana/grafana:8.0.0'
+    image: 'grafana/grafana:8.1.2'
     ports: 
       - '3000:3000'
     depends_on:
       - postgresdb
     volumes: 
       - 'grafana-storage:/var/lib/grafana'
+
 
   crate:
     image: crate:4.5
@@ -68,6 +69,7 @@ services:
     volumes:
       - cratedata:/data      
 
+
   quantumleap:
     image: smartsdk/quantumleap:latest
     ports: 
@@ -76,6 +78,8 @@ services:
       - crate
     environment: 
       CRATE_HOST: 'http://crate'
+      LOGLEVEL: 'DEBUG'
+
 
 volumes:
   rabbitmq_data:

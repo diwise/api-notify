@@ -20,23 +20,23 @@ func (s *SubscriptionRequest) Bind(r *http.Request) error {
 }
 
 type NotificationMessage struct {
-	topicName   string
-	contentType string
-	Payload     string
+	EntityType string `json:"type"`
+	EntityID   string `json:"id"`
+	Body       string `json:"body"`
 }
 
 func (nm NotificationMessage) TopicName() string {
-	return nm.topicName
+	return "notify"
 }
 
 func (nm NotificationMessage) ContentType() string {
-	return nm.contentType
+	return "application/json"
 }
 
-func NewNotificationMessage(payload string) *NotificationMessage {
+func NewNotificationMessage(body string) *NotificationMessage {
 	return &NotificationMessage{
-		contentType: "application/json",
-		topicName:   "notify",
-		Payload:     payload,
+		EntityType: "Device",
+		EntityID:   "someid",
+		Body:       body,
 	}
 }
