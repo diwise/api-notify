@@ -29,7 +29,7 @@ Create Subscription And Trigger Notification
     ${sub}=           Create Subscription  WaterQualityObserved  http://quantumleap:8668/v2/notify
     ${resp}=          POST On Session  diwise  /subscriptions  json=${sub}
 
-    ${wqo}=           Create WaterQualityObserved  temp=18.2
+    ${wqo}=           Create WaterQualityObserved  temp=20.2
     ${json}=          Json.Dumps  ${wqo}
     ${event}=         Create Dictionary  type=WaterQualityObserved    id=someid  body=${json}
 
@@ -44,8 +44,6 @@ suite setup
 
     ${headers}=       Create Dictionary   Content-Type=application/json
     Create Session    diwise    http://127.0.0.1:9090  headers=${headers}
-
-    ${resp}=          POST On Session  diwise  /init
 
 
 suite teardown
