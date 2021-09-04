@@ -26,9 +26,15 @@ func NewDatabase(dbUrl string) Db {
 		panic(err.Error())
 	}
 
+	_, err = db.Exec(context.Background(), `CREATE TABLE IF NOT EXISTS Subscriptions (subscriptionId varchar(255) NOT NULL PRIMARY KEY, subscriptionData json NOT NULL)`)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	return Db{
 		pool: db,
 	}
+
 }
 
 func (db *Db) GetSubscriptionsByIdOrType(ctx context.Context, id string, entityType string) []models.Subscription {
@@ -131,9 +137,4 @@ func (db *Db) DeleteSubscription(ctx context.Context, subscriptionId string) err
 	} else {
 		return err
 	}
-}
-
-func (db *Db) CreateDatabase() error {
-	_, err := db.pool.Exec(context.Background(), `CREATE TABLE Subscriptions (subscriptionId varchar(255) NOT NULL PRIMARY KEY, subscriptionData json NOT NULL)`)
-	return err
 }

@@ -43,8 +43,6 @@ func NewApplication(r chi.Router, db db.Db, mq mq.Context) *App {
 		})
 	})
 
-	r.Post("/init", a.initialize)
-
 	a.mq.RegisterTopicMessageHandler("ngsi-entity-created", a.notificationMessageHandler())
 	a.mq.RegisterTopicMessageHandler("ngsi-entity-updated", a.notificationMessageHandler())
 
@@ -99,13 +97,4 @@ func CopyMap(m map[string]interface{}) map[string]interface{} {
 	}
 
 	return cp
-}
-
-func (a *App) initialize(w http.ResponseWriter, r *http.Request) {
-	// ett sätt att skapa upp de tabeller som behövs för appen...
-	if err := a.db.CreateDatabase(); err == nil {
-		w.WriteHeader(http.StatusOK)
-	} else {
-		http.Error(w, fmt.Sprintf("Internal server error: %s", err.Error()), http.StatusInternalServerError)
-	}
 }
