@@ -35,7 +35,7 @@ Create Subscription And Trigger Notification
 
     ${json_str}=      Json.Dumps  ${event}
 
-    Publish Message	exchange_name=iot-msg-exchange-topic	routing_key=notify	payload=${json_str}
+    Publish Message	exchange_name=iot-msg-exchange-topic	routing_key=ngsi-entity-created	payload=${json_str}
 
 
 *** Keywords ***

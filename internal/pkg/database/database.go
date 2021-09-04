@@ -3,42 +3,50 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/diwise/api-notify/pkg/models"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-var db *pgxpool.Pool
+type Db interface {
+	CreateSubscription(ctx context.Context, subscription *models.Subscription) error
+	DeleteSubscription(ctx context.Context, subscriptionId string) error
+	GetSubscriptionById(subscriptionId string) (*models.Subscription, error)
+	GetSubscriptionsByIdOrType(ctx context.Context, id string, entityType string) ([]models.Subscription, error)
+	ListSubscriptions(ctx context.Context, limit int) ([]models.Subscription, error)
+	UpdateSubscription(ctx context.Context, subscription *models.Subscription) error
+}
 
-type Db struct {
+type myDB struct {
 	pool *pgxpool.Pool
 }
 
-func NewDatabase(dbUrl string) Db {
+func NewDatabase(dbUrl string) (Db, error) {
 	poolConfig, err := pgxpool.ParseConfig(dbUrl)
 	if err != nil {
-		panic(err.Error())
+		return nil, fmt.Errorf("failed to parse config: %s", err.Error())
 	}
 
-	db, err = pgxpool.ConnectConfig(context.Background(), poolConfig)
+	db, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
 	if err != nil {
-		panic(err.Error())
+		return nil, fmt.Errorf("failed to connect to pgxpool: %s", err.Error())
 	}
 
 	_, err = db.Exec(context.Background(), `CREATE TABLE IF NOT EXISTS Subscriptions (subscriptionId varchar(255) NOT NULL PRIMARY KEY, subscriptionData json NOT NULL)`)
 	if err != nil {
-		panic(err.Error())
+		return nil, fmt.Errorf("failed to create subscriptions table: %s", err.Error())
 	}
 
-	return Db{
+	return myDB{
 		pool: db,
-	}
+	}, nil
 
 }
 
-func (db *Db) GetSubscriptionsByIdOrType(ctx context.Context, id string, entityType string) []models.Subscription {
-	if rows, err := db.pool.Query(ctx, `
+func (db myDB) GetSubscriptionsByIdOrType(ctx context.Context, id string, entityType string) ([]models.Subscription, error) {
+	rows, err := db.pool.Query(ctx, `
 	
 	select subscriptiondata from (
 		select subscriptionid, subscriptiondata, json_array_elements(subscriptiondata -> 'entities') as entities
@@ -47,11 +55,13 @@ func (db *Db) GetSubscriptionsByIdOrType(ctx context.Context, id string, entityT
 	where entities ->> 'type' = $1
 	   or entities ->> 'id' = $2
 		   
-	`, entityType, id); err == nil {
-		return rowsToSubscriptions(rows)
-	} else {
-		return nil
+	`, entityType, id)
+
+	if err != nil {
+		return nil, err
 	}
+
+	return rowsToSubscriptions(rows), nil
 }
 
 func rowsToSubscriptions(rows pgx.Rows) []models.Subscription {
@@ -71,70 +81,70 @@ func rowsToSubscriptions(rows pgx.Rows) []models.Subscription {
 			return nil
 		}
 	}
+
 	return subscriptions
 }
 
-func (db *Db) ListSubscriptions(ctx context.Context, limit int) ([]models.Subscription, error) {
+func (db myDB) ListSubscriptions(ctx context.Context, limit int) ([]models.Subscription, error) {
 
-	if rows, err := db.pool.Query(ctx, `select subscriptiondata from subscriptions`); err == nil {
-
-		s := rowsToSubscriptions(rows)
-
-		return s, nil
-	} else {
-		return nil, rows.Err()
+	rows, err := db.pool.Query(ctx, `select subscriptiondata from subscriptions`)
+	if err != nil {
+		return nil, err
 	}
+
+	return rowsToSubscriptions(rows), nil
 }
 
-func (db *Db) GetSubscriptionById(subscriptionId string) (models.Subscription, error) {
+func (db myDB) GetSubscriptionById(subscriptionId string) (*models.Subscription, error) {
+
 	var data string
-	var s *models.Subscription
-
 	err := db.pool.QueryRow(context.Background(), "select subscriptionData from subscriptions where subscriptionId=$1", subscriptionId).Scan(&data)
-
-	if err == nil && len(data) > 0 {
-		if err := json.Unmarshal([]byte(data), &s); err == nil {
-			return *s, nil
-		} else {
-			return models.Subscription{}, err
-		}
-	} else {
-		return models.Subscription{}, err
+	if err != nil {
+		return nil, err
 	}
 
+	sub := &models.Subscription{}
+
+	err = json.Unmarshal([]byte(data), sub)
+	if err != nil {
+		return nil, err
+	}
+
+	return sub, nil
 }
 
-func (db *Db) CreateSubscription(ctx context.Context, subscription *models.Subscription) error {
-	if data, err := json.Marshal(subscription); err == nil {
-		id := subscription.Id
-		if _, err := db.pool.Exec(ctx, `insert into subscriptions (subscriptionid, subscriptiondata) values($1, $2) 
-								        on conflict (subscriptionid) do update set subscriptiondata=excluded.subscriptiondata`, id, data); err == nil {
-			return nil
-		} else {
-			return err
-		}
-	} else {
+func (db myDB) CreateSubscription(ctx context.Context, subscription *models.Subscription) error {
+	data, err := json.Marshal(subscription)
+	if err != nil {
 		return err
 	}
+
+	_, err = db.pool.Exec(
+		ctx,
+		`insert into subscriptions (subscriptionid, subscriptiondata) values($1, $2) 
+ 		 on conflict (subscriptionid) do update set subscriptiondata=excluded.subscriptiondata`,
+		subscription.Id,
+		data)
+
+	return err
 }
 
-func (db *Db) UpdateSubscription(ctx context.Context, subscription *models.Subscription) error {
-	if data, err := json.Marshal(subscription); err == nil {
-		id := subscription.Id
-		if _, err := db.pool.Exec(ctx, `update subscriptions set subscriptiondata = $2 where subscriptionid = $1`, id, data); err == nil {
-			return nil
-		} else {
-			return err
-		}
-	} else {
+func (db myDB) UpdateSubscription(ctx context.Context, subscription *models.Subscription) error {
+	data, err := json.Marshal(subscription)
+	if err != nil {
 		return err
 	}
+
+	_, err = db.pool.Exec(
+		ctx,
+		`update subscriptions set subscriptiondata = $2 where subscriptionid = $1`,
+		subscription.Id,
+		data)
+
+	return err
 }
 
-func (db *Db) DeleteSubscription(ctx context.Context, subscriptionId string) error {
-	if _, err := db.pool.Exec(ctx, `delete from subscriptions subscriptionid = $1`, subscriptionId); err == nil {
-		return nil
-	} else {
-		return err
-	}
+func (db myDB) DeleteSubscription(ctx context.Context, subscriptionId string) error {
+	_, err := db.pool.Exec(ctx, `delete from subscriptions subscriptionid = $1`, subscriptionId)
+	return err
 }

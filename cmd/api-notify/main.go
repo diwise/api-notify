@@ -14,7 +14,11 @@ import (
 
 func main() {
 	r := chi.NewRouter()
-	database := repo.NewDatabase(os.Getenv("DATABASE_URL"))
+	database, err := repo.NewDatabase(os.Getenv("DATABASE_URL"))
+
+	if err != nil {
+		log.Fatalf("database error: %s", err.Error())
+	}
 
 	ctx, _ := mq.Initialize(mq.Config{
 		Host:        os.Getenv("RABBITMQ_HOST"),

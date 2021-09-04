@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -15,14 +14,22 @@ import (
 	mq "github.com/diwise/messaging-golang/pkg/messaging"
 )
 
-type App struct {
+type Application interface {
+	Start(port string) error
+}
+
+type notifierApp struct {
 	router chi.Router
 	db     db.Db
 	mq     mq.Context
 }
 
-func NewApplication(r chi.Router, db db.Db, mq mq.Context) *App {
-	a := &App{
+func NewApplication(r chi.Router, db db.Db, mq mq.Context) Application {
+	return newNotifierApp(r, db, mq)
+}
+
+func newNotifierApp(r chi.Router, db db.Db, mq mq.Context) *notifierApp {
+	a := &notifierApp{
 		router: r,
 		db:     db,
 		mq:     mq,
@@ -33,13 +40,13 @@ func NewApplication(r chi.Router, db db.Db, mq mq.Context) *App {
 	r.Post("/notify/{entityType}", a.notify)
 
 	r.Route("/subscriptions", func(r chi.Router) {
-		r.Get("/", a.ListSubscriptions)
-		r.Post("/", a.CreateSubscription)
+		r.Get("/", a.listSubscriptions)
+		r.Post("/", a.createSubscription)
 		r.Route("/{subscriptionId}", func(r chi.Router) {
 			r.Use(a.subscriptionCtx)
-			r.Get("/", a.GetSubscription)
-			r.Put("/", a.UpdateSubscription)
-			r.Delete("/", a.DeleteSubscription)
+			r.Get("/", a.getSubscription)
+			r.Put("/", a.updateSubscription)
+			r.Delete("/", a.deleteSubscription)
 		})
 	})
 
@@ -49,52 +56,47 @@ func NewApplication(r chi.Router, db db.Db, mq mq.Context) *App {
 	return a
 }
 
-func (a *App) Start(port string) error {
+func (a *notifierApp) Start(port string) error {
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), a.router)
 }
 
-func (a *App) notify(w http.ResponseWriter, r *http.Request) {
+func (a *notifierApp) notify(w http.ResponseWriter, r *http.Request) {
 	// En metod för att kunna trigga en händelse som läggs på MQ.
-	// Att entityType ska vara i URL är egentligen inte nödvändigt.
 
-	if entityType := chi.URLParam(r, "entityType"); entityType != "" {
-		body, _ := ioutil.ReadAll(r.Body)
-		str := string(body)
-		a.mq.PublishOnTopic(NewNotificationMessage(str))
+	entityType := chi.URLParam(r, "entityType")
+	if entityType == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
+
+	body, _ := ioutil.ReadAll(r.Body)
+	str := string(body)
+	err := a.mq.PublishOnTopic(NewNotificationMessage(str))
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
-func (a *App) subscriptionCtx(next http.Handler) http.Handler {
+type contextKey string
+
+const (
+	subscriptionKey contextKey = "subscription"
+)
+
+func (a *notifierApp) subscriptionCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if subscriptionId := chi.URLParam(r, "subscriptionId"); subscriptionId != "" {
 			if s, err := a.db.GetSubscriptionById(subscriptionId); err == nil {
-				ctx := context.WithValue(r.Context(), "subscription", s)
+				ctx := context.WithValue(r.Context(), subscriptionKey, s)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 		}
 
-		ctx := context.WithValue(r.Context(), "subscription", nil)
+		ctx := context.WithValue(r.Context(), subscriptionKey, nil)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-func JsonObjectToMap(jsonData string) map[string]interface{} {
-	var result map[string]interface{}
-	json.Unmarshal([]byte(jsonData), &result)
-	return result
-}
-
-func CopyMap(m map[string]interface{}) map[string]interface{} {
-	cp := make(map[string]interface{})
-	for k, v := range m {
-		vm, ok := v.(map[string]interface{})
-		if ok {
-			cp[k] = CopyMap(vm)
-		} else {
-			cp[k] = v
-		}
-	}
-
-	return cp
 }

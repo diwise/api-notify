@@ -13,14 +13,14 @@ import (
 	"github.com/streadway/amqp"
 )
 
-func (a *App) notificationMessageHandler() mq.TopicMessageHandler {
+func (a *notifierApp) notificationMessageHandler() mq.TopicMessageHandler {
 	return func(msg amqp.Delivery) {
 		var nm NotificationMessage
 
 		log.Printf("message body: %s", string(msg.Body))
 
 		json.Unmarshal(msg.Body, &nm)
-		//m := JsonObjectToMap(string(nm.Body))
+		//m := jsonObjectToMap(string(nm.Body))
 
 		//TODO: det ska vara möjligt att hämta baserat på IdPattern också
 
@@ -32,17 +32,29 @@ func (a *App) notificationMessageHandler() mq.TopicMessageHandler {
 			return
 		}
 
-		subscriptions := a.db.GetSubscriptionsByIdOrType(context.Background(), id, entityType)
+		subscriptions, err := a.db.GetSubscriptionsByIdOrType(context.Background(), id, entityType)
+		if err != nil {
+			log.Printf("failed to get matching subscriptions: %s\n", err.Error())
+			return
+		}
 
 		for _, s := range subscriptions {
-			if status, err := notify(s, string(nm.Body)); err != nil {
+			status, err := notify(s, string(nm.Body))
+			if err != nil {
 				log.Printf("%s \n %s", status, err.Error())
-			} else {
-				log.Printf("Notification sent to %s", s.Notification.Endpoint.Uri)
+				continue
 			}
+
+			log.Printf("notification sent to %s", s.Notification.Endpoint.Uri)
 		}
 	}
 }
+
+/*func jsonObjectToMap(jsonData string) map[string]interface{} {
+	var result map[string]interface{}
+	json.Unmarshal([]byte(jsonData), &result)
+	return result
+}*/
 
 func notify(subscription models.Subscription, jsonData string) (string, error) {
 
@@ -59,8 +71,6 @@ func notify(subscription models.Subscription, jsonData string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	log.Printf("POST returned code %d", resp.StatusCode)
 
 	return resp.Status, nil
 }
