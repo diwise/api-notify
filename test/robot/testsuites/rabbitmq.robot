@@ -27,7 +27,7 @@ Get Subscriptions
 Create Subscription And Trigger Notification
 
     ${sub}=           Create Subscription  WaterQualityObserved  http://quantumleap:8668/v2/notify
-    ${resp}=          POST On Session  diwise  /subscriptions  json=${sub}
+    ${resp}=          POST On Session  diwise  /ngsi-ld/v1/subscriptions  json=${sub}
 
     ${wqo}=           Create WaterQualityObserved  temp=20.2
     ${json}=          Json.Dumps  ${wqo}
