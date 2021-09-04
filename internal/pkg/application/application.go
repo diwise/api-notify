@@ -37,6 +37,7 @@ func newNotifierApp(r chi.Router, db db.Db, mq mq.Context) *notifierApp {
 
 	r.Use(middleware.Logger)
 
+	r.Get("/health", a.health)
 	r.Post("/notify/{entityType}", a.notify)
 
 	r.Route("/subscriptions", func(r chi.Router) {
@@ -58,6 +59,10 @@ func newNotifierApp(r chi.Router, db db.Db, mq mq.Context) *notifierApp {
 
 func (a *notifierApp) Start(port string) error {
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), a.router)
+}
+
+func (a *notifierApp) health(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *notifierApp) notify(w http.ResponseWriter, r *http.Request) {

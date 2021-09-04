@@ -14,6 +14,18 @@ import (
 	"github.com/matryer/is"
 )
 
+func TestThatHealthEndpointReturns204(t *testing.T) {
+	is := is.New(t)
+
+	_, _, app := newAppForTesting()
+	ts := httptest.NewServer(app.router)
+	defer ts.Close()
+
+	resp, _ := testRequest(is, ts, "GET", "/health", nil)
+
+	is.Equal(resp.StatusCode, http.StatusNoContent) // health endpoint status code not ok
+}
+
 func TestThatNotifyInvocationPostsMessageToMQ(t *testing.T) {
 	is := is.New(t)
 
