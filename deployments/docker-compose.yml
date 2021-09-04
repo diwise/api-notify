@@ -13,11 +13,14 @@ services:
       - rabbitmq
       - postgresdb
     environment:
-      DATABASE_URL: 'postgres://testuser:testpass@postgresdb:5432/devreg?sslmode=disable&pool_max_conns=10'
-      SERVICE_PORT: '9090'
+      DIWISE_SQLDB_USER: 'testuser'
+      DIWISE_SQLDB_PASS: 'testpass'
+      DIWISE_SQLDB_HOST: 'postgresdb'
+      DIWISE_SQLDB_NAME: 'notifydb'
       RABBITMQ_HOST: 'rabbitmq'
       RABBITMQ_USER: 'user'
       RABBITMQ_PASSWORD: 'bitnami'
+      SERVICE_PORT: '9090'
     
     ports:
       - '9090:9090'
@@ -27,7 +30,7 @@ services:
     image: 'ghcr.io/diwise/test-db-postgresql:prod-824e7cffd65dd3766c88441a48cffd5b2acd55f2'
     restart: always
     environment:
-      POSTGRES_DB: 'devreg'
+      POSTGRES_DB: 'notifydb'
       POSTGRES_USER: 'testuser'
       POSTGRES_PASSWORD: 'testpass'
     ports:
