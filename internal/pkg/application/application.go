@@ -40,7 +40,7 @@ func newNotifierApp(r chi.Router, db db.Db, mq mq.Context) *notifierApp {
 	r.Get("/health", a.health)
 	r.Post("/notify/{entityType}", a.notify)
 
-	r.Route("/subscriptions", func(r chi.Router) {
+	r.Route("/ngsi-ld/v1/subscriptions", func(r chi.Router) {
 		r.Get("/", a.listSubscriptions)
 		r.Post("/", a.createSubscription)
 		r.Route("/{subscriptionId}", func(r chi.Router) {

@@ -15,7 +15,7 @@ func TestListSubscriptions(t *testing.T) {
 	ts := httptest.NewServer(app.router)
 	defer ts.Close()
 
-	resp, _ := testRequest(is, ts, "GET", "/subscriptions", nil)
+	resp, _ := testRequest(is, ts, "GET", "/ngsi-ld/v1/subscriptions", nil)
 
 	is.Equal(resp.StatusCode, http.StatusOK) // Check status code
 }
