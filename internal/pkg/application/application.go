@@ -43,7 +43,8 @@ func NewApplication(r chi.Router, db db.Db, mq mq.Context) *App {
 		})
 	})
 
-	a.mq.RegisterTopicMessageHandler("notify", a.notificationMessageHandler())
+	a.mq.RegisterTopicMessageHandler("ngsi-entity-created", a.notificationMessageHandler())
+	a.mq.RegisterTopicMessageHandler("ngsi-entity-updated", a.notificationMessageHandler())
 
 	return a
 }
