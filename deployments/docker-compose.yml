@@ -14,9 +14,10 @@ services:
       - postgresdb
     environment:
       DIWISE_SQLDB_USER: 'testuser'
-      DIWISE_SQLDB_PASS: 'testpass'
+      DIWISE_SQLDB_PASSWORD: 'testpass'
       DIWISE_SQLDB_HOST: 'postgresdb'
       DIWISE_SQLDB_NAME: 'notifydb'
+      DIWISE_SQLDB_SSLMODE: 'disable'
       RABBITMQ_HOST: 'rabbitmq'
       RABBITMQ_USER: 'user'
       RABBITMQ_PASSWORD: 'bitnami'
