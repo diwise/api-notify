@@ -32,7 +32,7 @@ func main() {
 	ctx, _ := mq.Initialize(mq.Config{
 		Host:        os.Getenv("RABBITMQ_HOST"),
 		User:        os.Getenv("RABBITMQ_USER"),
-		Password:    os.Getenv("RABBITMQ_PASSWORD"),
+		Password:    os.Getenv("RABBITMQ_PASS"),
 		ServiceName: "api-notify",
 	})
 

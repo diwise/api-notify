@@ -20,7 +20,7 @@ services:
       DIWISE_SQLDB_SSLMODE: 'disable'
       RABBITMQ_HOST: 'rabbitmq'
       RABBITMQ_USER: 'user'
-      RABBITMQ_PASSWORD: 'bitnami'
+      RABBITMQ_PASS: 'bitnami'
       SERVICE_PORT: '9090'
     
     ports:
