@@ -13,7 +13,7 @@ import (
 )
 
 // /subscriptions - returns list of subscriptions
-func (a *App) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
+func (a *notifierApp) listSubscriptions(w http.ResponseWriter, r *http.Request) {
 	if s, err := a.db.ListSubscriptions(r.Context(), 0); err == nil {
 		if data, err := json.Marshal(s); err == nil {
 			Ok(w, data)
@@ -26,8 +26,8 @@ func (a *App) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
 	NotFound(w)
 }
 
-func (a *App) GetSubscription(w http.ResponseWriter, r *http.Request) {
-	subscription := r.Context().Value("subscription") //.(*models.Subscription)
+func (a *notifierApp) getSubscription(w http.ResponseWriter, r *http.Request) {
+	subscription := r.Context().Value(subscriptionKey) //.(*models.Subscription)
 
 	if subscription == nil {
 		NotFound(w)
@@ -41,7 +41,7 @@ func (a *App) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) CreateSubscription(w http.ResponseWriter, r *http.Request) {
+func (a *notifierApp) createSubscription(w http.ResponseWriter, r *http.Request) {
 	subReq := &SubscriptionRequest{}
 
 	if err := render.Bind(r, subReq); err != nil {
@@ -62,7 +62,7 @@ func (a *App) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
+func (a *notifierApp) updateSubscription(w http.ResponseWriter, r *http.Request) {
 	subscription := r.Context().Value("subscription") //.(*models.Subscription)
 
 	if subscription == nil {
@@ -79,8 +79,8 @@ func (a *App) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
-	subscription := r.Context().Value("subscription") //.(*models.Subscription)
+func (a *notifierApp) deleteSubscription(w http.ResponseWriter, r *http.Request) {
+	subscription := r.Context().Value(subscriptionKey) //.(*models.Subscription)
 
 	if subscription == nil {
 		NotFound(w)
